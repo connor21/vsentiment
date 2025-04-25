@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vsentiment-pod
+  labels:
+    app: vsentiment
+spec:
+  containers:
+  - name: vsentiment-app
+    image: python:3.9-slim
+    command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+    - containerPort: 8501
+    volumeMounts:
+    - name: temp-storage
+      mountPath: /tmp
+    env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+    securityContext:
+      privileged: true
+  volumes:
+  - name: temp-storage
+    emptyDir: {}
+
+  # Required for GPU support
+  runtimeClassName: nvidia

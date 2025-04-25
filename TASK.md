@@ -13,6 +13,7 @@
 - [x] Update README.md with comprehensive documentation
 - [x] Implement frame level analysis of facial expression
 - [x] Implement facial expression report
+- [ ] Create pod description for podman to deploy the app
 
 ## Upcoming Tasks (Prioritized)
 1. Add multilingual support
