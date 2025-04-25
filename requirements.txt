@@ -1,0 +1,9 @@
+streamlit
+opencv-python
+moviepy
+openai-whisper
+transformers
+black
+matplotlib
+torch
+deepface
