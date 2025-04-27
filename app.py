@@ -14,6 +14,7 @@ class AnalysisResult:
     timestamps: list[float]
     sentiments: list[float]
     facial_expressions: List[Dict[str, str]]  # {'time': float, 'emotion': str}
+    emotion_examples: List[Dict[str, any]]  # {'time': float, 'emotion': str, 'image': np.array}
     transcript: str
 
 def extract_audio(video_path: str, audio_path: str) -> None:
@@ -99,6 +100,12 @@ def process_video(video_path: str) -> AnalysisResult:
     
     # Aggregate to emotion with highest average probability per second
     facial_expressions = []
+    emotion_examples = []
+    
+    # Re-open video to capture example frames
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    
     for second, data in frame_emotions.items():
         if data['count'] > 0:
             # Calculate average probability for each emotion
@@ -109,15 +116,32 @@ def process_video(video_path: str) -> AnalysisResult:
             }
             # Get emotion with highest average probability
             dominant_emotion = max(avg_scores.items(), key=lambda x: x[1])[0]
+            
+            # Capture example frame for this emotion
+            frame_pos = int(second * fps)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_pos)
+            ret, frame = cap.read()
+            if ret:
+                # Convert BGR to RGB for display
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                emotion_examples.append({
+                    'time': second,
+                    'emotion': dominant_emotion,
+                    'image': frame_rgb
+                })
+            
             facial_expressions.append({
                 'time': second,
                 'emotion': dominant_emotion
             })
     
+    cap.release()
+    
     return AnalysisResult(
         timestamps=timestamps,
         sentiments=sentiments,
         facial_expressions=facial_expressions,
+        emotion_examples=emotion_examples,
         transcript=transcript
     )
 
@@ -184,6 +208,21 @@ def main():
                 # Display table sorted by timestamp
                 table_data.sort(key=lambda x: float(x["Timestamp (s)"]))
                 st.table(table_data)
+                
+                # Display emotion examples table if available
+                if result.emotion_examples:
+                    st.subheader("Emotion Examples")
+                    for example in sorted(result.emotion_examples, key=lambda x: x['time']):
+                        col1, col2 = st.columns([1, 3])
+                        with col1:
+                            st.image(example['image'], 
+                                    caption=f"Time: {example['time']:.1f}s",
+                                    width=150)
+                        with col2:
+                            st.markdown(f"""
+                            **Emotion**: {example['emotion'].capitalize()}
+                            """)
+                        st.markdown("---")
             finally:
                 # Clean up temporary files
                 import os

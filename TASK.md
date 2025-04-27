@@ -15,7 +15,7 @@
 - [x] Implement facial expression report
 - [x] Create pod description for podman to deploy the app
 - [x] Create table for text analysis with timestamps, detected emotions, and source text
-- [] Create a table showing an example of the selected emotion as an image with the emotion tag and timescore
+- [x] Create a table showing example images of detected emotions with tags and timestamps
 
 ## Upcoming Tasks (Prioritized)
 1. Add multilingual support
