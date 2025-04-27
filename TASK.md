@@ -13,7 +13,9 @@
 - [x] Update README.md with comprehensive documentation
 - [x] Implement frame level analysis of facial expression
 - [x] Implement facial expression report
-- [ ] Create pod description for podman to deploy the app
+- [x] Create pod description for podman to deploy the app
+- [x] Create table for text analysis with timestamps, detected emotions, and source text
+- [] Create a table showing an example of the selected emotion as an image with the emotion tag and timescore
 
 ## Upcoming Tasks (Prioritized)
 1. Add multilingual support

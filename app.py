@@ -167,6 +167,23 @@ def main():
                 
                 plt.tight_layout()
                 st.pyplot(fig)
+                
+                # Create and display text sentiment analysis table
+                st.subheader("Text Sentiment Analysis")
+                sentences = [s.strip() for s in result.transcript.split('.') if s.strip()]
+                table_data = []
+                for i, (time, sentiment) in enumerate(zip(result.timestamps, result.sentiments)):
+                    if i < len(sentences):
+                        table_data.append({
+                            "Timestamp (s)": f"{time:.1f}",
+                            "Text": sentences[i],
+                            "Sentiment Score": f"{sentiment:.2f}",
+                            "Sentiment Label": "Positive" if sentiment > 0 else "Negative" if sentiment < 0 else "Neutral"
+                        })
+                
+                # Display table sorted by timestamp
+                table_data.sort(key=lambda x: float(x["Timestamp (s)"]))
+                st.table(table_data)
             finally:
                 # Clean up temporary files
                 import os
