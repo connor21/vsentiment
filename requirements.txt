@@ -8,3 +8,4 @@ matplotlib
 torch
 deepface
 tf-keras
+librosa

@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import cv2
 from moviepy import VideoFileClip
@@ -8,6 +9,7 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from deepface import DeepFace
 from typing import Dict, List
+import librosa
 
 @dataclass
 class AnalysisResult:
@@ -16,11 +18,21 @@ class AnalysisResult:
     facial_expressions: List[Dict[str, str]]  # {'time': float, 'emotion': str}
     emotion_examples: List[Dict[str, any]]  # {'time': float, 'emotion': str, 'image': np.array}
     transcript: str
+    audio_sentiment: Dict[str, any]  # {'timestamps': list[float], 'scores': list[float], 'features': dict}
 
 def extract_audio(video_path: str, audio_path: str) -> None:
     """Extract audio from video file using MoviePy"""
-    video = VideoFileClip(video_path)
-    video.audio.write_audiofile(audio_path)
+    try:
+        if not os.path.exists(video_path):
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+            
+        video = VideoFileClip(video_path)
+        if not video.audio:
+            raise ValueError("Video file has no audio track")
+            
+        video.audio.write_audiofile(audio_path)
+    except Exception as e:
+        raise RuntimeError(f"Failed to extract audio: {str(e)}") from e
 
 def transcribe_audio(audio_path: str) -> str:
     """Transcribe audio to text using Whisper"""
@@ -41,6 +53,46 @@ def analyze_sentiment(text: str) -> float:
     # Map labels to scores: positive=1, neutral=0, negative=-1
     label_map = {"positive": 1, "neutral": 0, "negative": -1}
     return label_map[result['label']] * result['score']
+
+def analyze_audio_sentiment(audio_path: str) -> Dict[str, List[float]]:
+    """Analyze audio features to determine voice sentiment"""
+    try:
+        # Load audio file
+        y, sr = librosa.load(audio_path)
+        
+        # Extract features
+        features = {
+            'pitch': librosa.yin(y, fmin=50, fmax=500),  # Fundamental frequency
+            'energy': librosa.feature.rms(y=y),  # Root mean square energy
+            'spectral_centroid': librosa.feature.spectral_centroid(y=y, sr=sr),
+            'zero_crossing_rate': librosa.feature.zero_crossing_rate(y),
+            'mfcc': librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+        }
+        
+        # Calculate sentiment indicators
+        # Higher pitch and energy generally indicate more positive/excited sentiment
+        avg_pitch = np.mean(features['pitch'][features['pitch'] > 0])  # Filter out invalid pitches
+        avg_energy = np.mean(features['energy'])
+        
+        # Normalize and combine into sentiment score (-1 to 1)
+        pitch_score = np.clip((avg_pitch - 150) / 100, -1, 1)  # Normalize around typical speech pitch
+        energy_score = np.clip((avg_energy - 0.05) * 20, -1, 1)  # Normalize around typical speech energy
+        
+        # Combine scores with weights
+        sentiment_score = (pitch_score * 0.6 + energy_score * 0.4)
+        
+        return {
+            'features': features,
+            'sentiment_score': sentiment_score,
+            'timestamps': np.linspace(0, len(y)/sr, len(features['energy'][0]))
+        }
+    except Exception as e:
+        st.warning(f"Audio analysis failed: {e}")
+        return {
+            'features': {},
+            'sentiment_score': 0,
+            'timestamps': []
+        }
 
 def process_video(video_path: str) -> AnalysisResult:
     """Main processing pipeline for video analysis"""
@@ -137,12 +189,16 @@ def process_video(video_path: str) -> AnalysisResult:
     
     cap.release()
     
+    # Analyze audio sentiment features
+    audio_sentiment = analyze_audio_sentiment(audio_path)
+    
     return AnalysisResult(
         timestamps=timestamps,
         sentiments=sentiments,
         facial_expressions=facial_expressions,
         emotion_examples=emotion_examples,
-        transcript=transcript
+        transcript=transcript,
+        audio_sentiment=audio_sentiment
     )
 
 def main():
@@ -165,8 +221,8 @@ def main():
                 st.subheader("Analysis Results")
                 st.write(f"Transcript: {result.transcript}")
                 
-                # Plot sentiment and facial expressions over time
-                fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+                # Plot sentiment, facial expressions and audio features over time
+                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))
                 
                 # Plot sentiment
                 ax1.plot(result.timestamps, result.sentiments)
@@ -189,8 +245,54 @@ def main():
                     ax2.set(xlabel='Time (s)', ylabel='Dominant Emotion',
                            title='Facial Expression Analysis (Highest Average Probability per Second)')
                 
+                # Plot audio sentiment if available
+                if hasattr(result, 'audio_sentiment') and result.audio_sentiment and \
+                   'timestamps' in result.audio_sentiment and len(result.audio_sentiment['timestamps'])>0 and \
+                   'features' in result.audio_sentiment and 'energy' in result.audio_sentiment['features']:
+                    
+                    # Aggregate pitch values per second
+                    timestamps = result.audio_sentiment['timestamps']
+                    pitch = result.audio_sentiment['features']['pitch']
+                    energy = result.audio_sentiment['features']['energy'][0]
+                    
+                    # Create second-level bins
+                    seconds = np.floor(timestamps).astype(int)
+                    unique_seconds = np.unique(seconds)
+                    avg_pitch = [np.mean(pitch[seconds == s]) for s in unique_seconds]
+                    
+                    # Create separate plots for pitch and energy
+                    fig2, (ax_pitch, ax_energy) = plt.subplots(2, 1, figsize=(10, 8))
+                    
+                    # Plot pitch with proper scale (Hz)
+                    ax_pitch.plot(unique_seconds, avg_pitch, color='blue')
+                    ax_pitch.set(xlabel='Time (s)', ylabel='Pitch (Hz)',
+                               title='Average Pitch per Second')
+                    ax_pitch.grid(True)
+                    
+                    # Plot energy with proper scale
+                    ax_energy.plot(timestamps, energy, color='orange')
+                    ax_energy.set(xlabel='Time (s)', ylabel='Energy (RMS)',
+                                title='Energy Over Time')
+                    ax_energy.grid(True)
+                    
+                    plt.tight_layout()
+                    st.pyplot(fig2)
+                
                 plt.tight_layout()
                 st.pyplot(fig)
+                
+                # Display audio sentiment statistics
+                if result.audio_sentiment['features']:
+                    st.subheader("Audio Sentiment Analysis")
+                    st.write(f"Overall Audio Sentiment Score: {result.audio_sentiment['sentiment_score']:.2f}")
+                    st.write("Feature Statistics:")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"Average Pitch: {np.mean(result.audio_sentiment['features']['pitch']):.1f} Hz")
+                        st.write(f"Average Energy: {np.mean(result.audio_sentiment['features']['energy']):.4f}")
+                    with col2:
+                        st.write(f"Max Pitch: {np.max(result.audio_sentiment['features']['pitch']):.1f} Hz")
+                        st.write(f"Max Energy: {np.max(result.audio_sentiment['features']['energy']):.4f}")
                 
                 # Create and display text sentiment analysis table
                 st.subheader("Text Sentiment Analysis")
