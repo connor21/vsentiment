@@ -9,3 +9,4 @@ torch
 deepface
 tf-keras
 librosa
+nltk

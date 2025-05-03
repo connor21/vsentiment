@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from deepface import DeepFace
 from typing import Dict, List
 import librosa
+import nltk
+nltk.download('punkt')
+nltk.download('punkt_tab')
 
 @dataclass
 class AnalysisResult:
@@ -100,8 +103,8 @@ def process_video(video_path: str) -> AnalysisResult:
     extract_audio(video_path, audio_path)
     transcript = transcribe_audio(audio_path)
     
-    # Split transcript into sentences for time-series analysis
-    sentences = [s.strip() for s in transcript.split('.') if s.strip()]
+    # Split transcript into proper sentences using NLTK
+    sentences = nltk.sent_tokenize(transcript, language='german')
     
     # Calculate approximate timestamps based on sentence count
     video = VideoFileClip(video_path)

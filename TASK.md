@@ -22,3 +22,7 @@
 - [x] Add a report about voice sentiment analysis
 - [x] Use different diagrams for pitch and energy with proper scales
 - [x] Aggregate pitch values per second to the average
+
+## ✅ Optimizations
+- [x] Split the text into complete sentences for the textual sentiment analysis (using nltk.sent_tokenize)
+- [ ] Visualize MFCC extracted from audio analysis with `librosa.display.specshow`
