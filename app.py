@@ -222,7 +222,7 @@ def main():
                 st.write(f"Transcript: {result.transcript}")
                 
                 # Plot sentiment, facial expressions and audio features over time
-                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))
+                fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
                 
                 # Plot sentiment
                 ax1.plot(result.timestamps, result.sentiments)
