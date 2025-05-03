@@ -25,4 +25,6 @@
 
 ## ✅ Optimizations
 - [x] Split the text into complete sentences for the textual sentiment analysis (using nltk.sent_tokenize)
-- [ ] Visualize MFCC extracted from audio analysis with `librosa.display.specshow`
+- [x] Visualize MFCC extracted from audio analysis with `librosa.display.specshow`
+- [ ] Implement emotion detection based on audio data with `pyAudioAnalysis`
+- [ ] Visualize results of emotion detection with `pyAudioAnalysis`in report

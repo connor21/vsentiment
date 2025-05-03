@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from deepface import DeepFace
 from typing import Dict, List
 import librosa
+import librosa.display
 import nltk
 nltk.download('punkt')
 nltk.download('punkt_tab')
@@ -280,6 +281,20 @@ def main():
                     
                     plt.tight_layout()
                     st.pyplot(fig2)
+
+                    # Visualize MFCC features
+                    if 'mfcc' in result.audio_sentiment['features']:
+                        mfcc = result.audio_sentiment['features']['mfcc']
+                        fig3, ax = plt.subplots(figsize=(10, 4))
+                        img = librosa.display.specshow(
+                            mfcc,
+                            x_axis='time',
+                            sr=result.audio_sentiment['features'].get('sr', 22050),
+                            ax=ax
+                        )
+                        fig3.colorbar(img, ax=ax)
+                        ax.set(title='MFCC Features')
+                        st.pyplot(fig3)
                 
                 plt.tight_layout()
                 st.pyplot(fig)
