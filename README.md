@@ -24,21 +24,21 @@ pip install -r requirements.txt
 ```
 3. Download Whisper model (will happen automatically on first run)
 
-## Container Deployment (Podman)
+## Container Deployment (Docker)
 1. Build the container image:
 ```bash
-podman build -t vsentiment -f Dockerfile .
+docker build -t vsentiment .
 ```
-2. Create and start the pod:
+2. Run the container:
 ```bash
-podman play kube pod-description.yaml
+docker run -p 8501:8501 vsentiment
 ```
 3. Access the application at:
 ```bash
 http://localhost:8501
 ```
 
-Note: Requires Podman with GPU support and NVIDIA container runtime installed.
+Note: For GPU support, install NVIDIA Container Toolkit and add `--gpus all` to the docker run command.
 
 ## Usage
 1. Run the application:

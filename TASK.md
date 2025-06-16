@@ -28,3 +28,6 @@
 - [x] Visualize MFCC extracted from audio analysis with `librosa.display.specshow`
 - [ ] Implement emotion detection based on audio data with `pyAudioAnalysis`
 - [ ] Visualize results of emotion detection with `pyAudioAnalysis`in report
+
+## ✅ Documentation Updates (2025-06-16)
+- [x] Update README.md with Docker instructions and remove Podman references
